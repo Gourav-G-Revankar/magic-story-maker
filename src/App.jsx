@@ -1,9 +1,7 @@
-// # Main state container orchestrating components
-
 import { useState } from "react";
 import "./App.css";
 
-import { PRESETS } from "./constants/storyPresets";
+import { TRANSLATIONS } from "./locales/translations";
 import {
   callGroq,
   cleanText,
@@ -11,6 +9,7 @@ import {
   MAX_TRIES,
 } from "./services/groqService";
 
+import LanguageToggle from "./components/LanguageToggle";
 import FloatingDecorations from "./components/FloatingDecorations";
 import Header from "./components/Header";
 import TabButtons from "./components/TabButtons";
@@ -18,21 +17,38 @@ import CustomWordsTab from "./components/CustomWordsTab";
 import PresetsTab from "./components/PresetsTab";
 import StoryResult from "./components/StoryResult";
 
-export function App() {
-  const [activeTab, setActiveTab] = useState("custom");
-  const [keywords, setKeywords] = useState(["Book", "Tree", "Mountain"]);
+const firstPresets = (t) => ({
+  character: t.presets.characters[0].label,
+  place: t.presets.places[0].label,
+  object: t.presets.objects[0].label,
+  moral: t.presets.morals[0].label,
+});
 
-  const [presetSelections, setPresetSelections] = useState({
-    character: PRESETS.characters[0].label,
-    place: PRESETS.places[0].label,
-    object: PRESETS.objects[0].label,
-    moral: PRESETS.morals[0].label,
-  });
+export function App() {
+  const [lang, setLang] = useState("en"); // 'en' or 'kn'
+  const t = TRANSLATIONS[lang];
+
+  const [activeTab, setActiveTab] = useState("custom");
+  const [keywords, setKeywords] = useState([
+    "Mango",
+    "Tree",
+    "Mountain",
+    "Lion",
+  ]);
+  const [presetSelections, setPresetSelections] = useState(firstPresets(t));
 
   const [story, setStory] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [retryInfo, setRetryInfo] = useState("");
+
+  const handleLanguageChange = (newLang) => {
+    window.speechSynthesis.cancel();
+    setLang(newLang);
+    setPresetSelections(firstPresets(TRANSLATIONS[newLang]));
+    setStory(""); // old story is in the other language
+    setError("");
+  };
 
   const handleAddWord = (raw) => {
     const word = raw.trim();
@@ -58,17 +74,17 @@ export function App() {
             presetSelections.character,
             presetSelections.place,
             presetSelections.object,
-            `Lesson: ${presetSelections.moral}`,
+            `${t.lessonPrefix} ${presetSelections.moral}`,
           ];
 
     if (items.length === 0) {
-      setError("Add at least one word first!");
+      setError(t.errorEmpty);
       return;
     }
 
     const apiKey = import.meta.env.VITE_GROQ_API_KEY;
     if (!apiKey) {
-      setError("API key missing. Add VITE_GROQ_API_KEY to .env and restart.");
+      setError(t.errorApiKey);
       return;
     }
 
@@ -77,21 +93,17 @@ export function App() {
     setError("");
     setStory("");
 
-    const prompt = buildStoryPrompt(items);
+    const prompt = buildStoryPrompt(items, lang);
 
     try {
       const rawText = await callGroq(prompt, apiKey, (n) =>
-        setRetryInfo(`Magic is busy, trying again (${n}/${MAX_TRIES})...`),
+        setRetryInfo(`${t.generating} (${n}/${MAX_TRIES})`),
       );
       if (rawText) setStory(cleanText(rawText));
-      else setError("No story came back. Please try again!");
+      else setError("No story returned. Please try again!");
     } catch (err) {
       console.error(err);
-      setError(
-        err?.status
-          ? `${err.message} (Free limit or busy servers. Wait a minute and try again.)`
-          : "Network error. Check your connection and try again.",
-      );
+      setError(err?.message || "Error generating story.");
     } finally {
       setLoading(false);
       setRetryInfo("");
@@ -99,20 +111,30 @@ export function App() {
   };
 
   return (
-    <div className="container">
+    <div className="container" lang={lang}>
+      <div className="top-bar">
+        <LanguageToggle currentLang={lang} onToggle={handleLanguageChange} />
+      </div>
+
       <FloatingDecorations />
-      <Header />
-      <TabButtons activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header title={t.title} subtitle={t.subtitle} />
+      <TabButtons activeTab={activeTab} onTabChange={setActiveTab} labels={t} />
 
       <div className="card">
         {activeTab === "custom" ? (
           <CustomWordsTab
+            t={t}
             keywords={keywords}
             onAddWord={handleAddWord}
             onRemoveWord={handleRemoveWord}
           />
         ) : (
-          <PresetsTab values={presetSelections} onChange={handlePresetChange} />
+          <PresetsTab
+            t={t}
+            presets={t.presets}
+            values={presetSelections}
+            onChange={handlePresetChange}
+          />
         )}
 
         <button
@@ -120,24 +142,13 @@ export function App() {
           onClick={generateStory}
           disabled={loading}
         >
-          {loading
-            ? retryInfo || "🪄 Spinning a story..."
-            : "🌟 Create Magic Story!"}
+          {loading ? retryInfo || t.generating : t.btnGenerate}
         </button>
-
-        {loading && (
-          <div className="loader" aria-live="polite">
-            <span>🦁</span>
-            <span>🌈</span>
-            <span>📖</span>
-            <span>⭐</span>
-          </div>
-        )}
 
         {error && <p className="error">⚠️ {error}</p>}
       </div>
 
-      {story && <StoryResult story={story} />}
+      {story && <StoryResult story={story} t={t} lang={lang} />}
     </div>
   );
 }

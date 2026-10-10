@@ -1,22 +1,38 @@
-// # Story display, TTS read aloud, and copy buttons
-
 import { useState, useEffect } from "react";
 import { stripEmojis } from "../services/groqService";
 
-export default function StoryResult({ story }) {
+export default function StoryResult({ story, t, lang }) {
   const [reading, setReading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => () => window.speechSynthesis.cancel(), []);
 
   const toggleSpeech = () => {
     if (!story) return;
+    setNotice("");
+
     if (reading) {
       window.speechSynthesis.cancel();
       setReading(false);
       return;
     }
+
+    const langTag = lang === "kn" ? "kn-IN" : "en-US";
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find((v) =>
+      v.lang.toLowerCase().startsWith(langTag.slice(0, 2)),
+    );
+
+    // Many PCs have no Kannada voice; tell the user instead of reading it wrongly
+    if (voices.length > 0 && !voice) {
+      setNotice(t.noVoice);
+      return;
+    }
+
     const utterance = new SpeechSynthesisUtterance(stripEmojis(story));
+    utterance.lang = langTag;
+    if (voice) utterance.voice = voice;
     utterance.rate = 0.9;
     utterance.pitch = 1.1;
     utterance.onend = () => setReading(false);
@@ -31,7 +47,7 @@ export default function StoryResult({ story }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      alert("Could not copy. Select the text and copy it manually.");
+      setNotice(t.errorCopy);
     }
   };
 
@@ -40,16 +56,19 @@ export default function StoryResult({ story }) {
   return (
     <div className="card story-result">
       <div className="story-actions">
-        <h2>📖 Your Adventure</h2>
+        <h2>{t.resultTitle}</h2>
         <div className="action-buttons">
           <button className="btn-read" onClick={toggleSpeech}>
-            {reading ? "⏹ Stop" : "🔊 Read Aloud"}
+            {reading ? t.btnStop : t.btnRead}
           </button>
           <button className="btn-copy" onClick={copyStory}>
-            {copied ? "✅ Copied!" : "📋 Copy"}
+            {copied ? t.btnCopied : t.btnCopy}
           </button>
         </div>
       </div>
+
+      {notice && <p className="error">⚠️ {notice}</p>}
+
       <div className="story-body">
         <h3 className="story-title">{title}</h3>
         {paragraphs.map((line, i) => (

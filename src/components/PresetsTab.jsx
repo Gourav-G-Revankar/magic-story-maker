@@ -1,32 +1,29 @@
-// # Preset pickers for hero, place, object, lesson
-
 import Picker from "./Picker";
-import { PRESETS } from "../constants/storyPresets";
 
-export default function PresetsTab({ values, onChange }) {
+export default function PresetsTab({ t, presets, values, onChange }) {
   return (
     <>
       <Picker
-        title="🦸 Who is the hero?"
-        items={PRESETS.characters}
+        title={t.pickerHero}
+        items={presets.characters}
         value={values.character}
         onChange={(val) => onChange("character", val)}
       />
       <Picker
-        title="🏰 Where does it happen?"
-        items={PRESETS.places}
+        title={t.pickerPlace}
+        items={presets.places}
         value={values.place}
         onChange={(val) => onChange("place", val)}
       />
       <Picker
-        title="🎈 What special thing is there?"
-        items={PRESETS.objects}
+        title={t.pickerObject}
+        items={presets.objects}
         value={values.object}
         onChange={(val) => onChange("object", val)}
       />
       <Picker
-        title="💖 What do we learn?"
-        items={PRESETS.morals}
+        title={t.pickerMoral}
+        items={presets.morals}
         value={values.moral}
         onChange={(val) => onChange("moral", val)}
       />

@@ -20,24 +20,39 @@ export const cleanText = (t) =>
 export const stripEmojis = (t) =>
   t
     .replace(
-      /[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\uFE0F\u200D\u20E3]/gu,
+      /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D\p{Extended_Pictographic})*/gu,
       "",
     )
+    .replace(/[\p{Regional_Indicator}\uFE0F]/gu, "")
     .replace(/[ \t]+([.,!?;:])/g, "$1")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 
-export function buildStoryPrompt(items) {
+export function buildStoryPrompt(items, lang = "en") {
+  if (lang === "kn") {
+    return `ನೀವು ಮಕ್ಕಳಿಗಾಗಿ ಸುಂದರ ಕಥೆಗಳನ್ನು ರಚಿಸುವ ಬರಹಗಾರರು. 4 ರಿಂದ 8 ವರ್ಷದ ಮಕ್ಕಳಿಗೆ ಅರ್ಥವಾಗುವಂತೆ ಈ ಅಂಶಗಳನ್ನು ಬಳಸಿ ಒಂದು ಸುಂದರ, ಮುದ್ದಾದ ಕಥೆಯನ್ನು ರಚಿಸಿ: ${items.join(", ")}.
+
+ನಿಯಮಗಳು:
+- ಸಾಲು 1: ಆಕರ್ಷಕ ಎಮೋಜಿಗಳಿರುವ ಮುದ್ದಾದ ಕನ್ನಡ ಶೀರ್ಷಿಕೆ ನೀಡಿ.
+- ಉದ್ದ: ಒಟ್ಟು 8 ರಿಂದ 12 ಸರಳ ವಾಕ್ಯಗಳು.
+- ರಚನೆ: 2-3 ವಾಕ್ಯಗಳ ಸಣ್ಣ ಪ್ಯಾರಾಗ್ರಾಫ್‌ಗಳು.
+- ಭಾಷೆ: ಸರಳ ಹಾಗೂ ಸ್ಪಷ್ಟ ಕನ್ನಡ ಪದಗಳನ್ನು ಬಳಸಿ.
+- ಎಮೋಜಿ: ವಾಕ್ಯಗಳ ನಡುವೆ ಸೂಕ್ತ ಎಮೋಜಿಗಳನ್ನು ಸೇರಿಸಿ.
+- ಸಂದೇಶ: ಕಥೆಯ ಕೊನೆಯಲ್ಲಿ ಪ್ರೀತಿ ಹಾಗೂ ಒಳ್ಳೆಯ ಸಂದೇಶವಿರಲಿ.
+- ಫಾರ್ಮ್ಯಾಟಿಂಗ್: ಕೇವಲ ಸರಳ ಪಠ್ಯ (plain text). ಯಾವುದೇ markdown (#, **) ಬಳಸಬೇಡಿ.`;
+  }
+
+  // Default English prompt
   return `You are a warm, cheerful children's story writer. Write a short, delightful story for kids aged 4 to 8 using these items: ${items.join(", ")}.
 
 Rules:
 - Line 1: Put a cute title decorated with fun emojis.
 - Length: Around 10 to 15 short sentences total.
 - Structure: Break into short paragraphs of 2 to 3 sentences each.
-- Emojis: Naturally sprinkle friendly, relevant emojis throughout the sentences to make it colorful and engaging for young readers.
-- Language: Use simple, easy-to-read vocabulary with an encouraging, playful tone.
-- Theme: Keep the adventure gentle, safe, and happy, ending with a warm positive message.
-- Formatting: Plain text only. Do not use markdown styling, asterisks (**), or hashtags (#).`;
+- Emojis: Naturally sprinkle friendly, relevant emojis throughout.
+- Language: Simple, easy-to-read vocabulary with an encouraging tone.
+- Theme: Gentle, safe, and happy, ending with a warm positive message.
+- Formatting: Plain text only. No markdown formatting.`;
 }
 
 export async function callGroq(prompt, apiKey, onRetry) {
