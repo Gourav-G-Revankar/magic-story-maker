@@ -1,9 +1,11 @@
-// # Input, idea buttons, and selected tags
-
 import React, { useState } from "react";
-import { IDEAS } from "../constants/storyPresets";
 
-export default function CustomWordsTab({ keywords, onAddWord, onRemoveWord }) {
+export default function CustomWordsTab({
+  t,
+  keywords,
+  onAddWord,
+  onRemoveWord,
+}) {
   const [keywordInput, setKeywordInput] = useState("");
 
   const handleSubmit = (e) => {
@@ -17,34 +19,35 @@ export default function CustomWordsTab({ keywords, onAddWord, onRemoveWord }) {
       <form onSubmit={handleSubmit} className="input-row">
         <input
           type="text"
-          placeholder="Type a word... like dragon!"
+          placeholder={t.inputPlaceholder}
           value={keywordInput}
           onChange={(e) => setKeywordInput(e.target.value)}
           maxLength={30}
         />
         <button type="submit" className="btn-add">
-          + Add
+          {t.btnAdd}
         </button>
       </form>
 
       <div className="ideas">
-        <span>Need ideas?</span>
-        {IDEAS.map((i) => (
+        <span>{t.needIdeas}</span>
+        {t.ideas.map((idea) => (
           <button
-            key={i}
+            key={idea}
             type="button"
             className="idea"
-            onClick={() => onAddWord(i.split(" ")[1])}
+            // "🦁 Lion" -> "Lion" (everything after the first space)
+            onClick={() => onAddWord(idea.slice(idea.indexOf(" ") + 1))}
           >
-            {i}
+            {idea}
           </button>
         ))}
       </div>
 
-      <h3 className="label">🧺 Story Ingredients</h3>
+      <h3 className="label">{t.storyIngredients}</h3>
       <div className="chips-container">
         {keywords.length === 0 && (
-          <span className="empty">Nothing here yet. Add a word!</span>
+          <span className="empty">{t.emptyIngredients}</span>
         )}
         {keywords.map((word, index) => (
           <React.Fragment key={word}>
